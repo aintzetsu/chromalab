@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChromaLab — WCAG Contrast &amp; Design Token Generator</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/main.css">
+  <script defer src="js/color.js"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body>
+  <!-- Inline SVG Color-Vision Deficiency Simulation Filters -->
+  <svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
+    <defs>
+      <filter id="cvd-protanopia">
+        <feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cvd-deuteranopia">
+        <feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.700 0.300 0 0 0  0 0.300 0.700 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cvd-tritanopia">
+        <feColorMatrix type="matrix" values="0.950 0.050 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="page-wrap">
+    <header class="foundry-header">
+      <div class="brand">
+        <div class="brand-swatch" id="brandSwatch" aria-hidden="true"></div>
+        <div>
+          <h1>ChromaLab Token Foundry</h1>
+          <p>WCAG 2.1 contrast scale generator, color-blind preview &amp; CSS/Tailwind exporter</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <label style="font-size:12.5px;font-weight:600;color:var(--text-muted);" for="cvdSelect">Vision:</label>
+        <select id="cvdSelect" class="btn" aria-label="Color vision simulation mode">
+          <option value="none">Normal Vision</option>
+          <option value="protanopia">Protanopia (Red-blind)</option>
+          <option value="deuteranopia">Deuteranopia (Green-blind)</option>
+          <option value="tritanopia">Tritanopia (Blue-blind)</option>
+          <option value="achromatopsia">Achromatopsia (Mono)</option>
+        </select>
+        <button type="button" class="btn btn-accent" id="randomHueBtn">Randomize Hue</button>
+      </div>
+    </header>
+
+    <section class="card" aria-label="Brand color picker">
+      <div class="generator-bar">
+        <div class="hex-box">
+          <input type="color" id="colorPicker" value="#2563eb" aria-label="Pick brand color">
+          <input type="text" id="hexInput" value="#2563EB" maxlength="7" aria-label="Brand hex value">
+        </div>
+
+        <div class="hsl-sliders">
+          <div class="slider-item">
+            <div class="slider-label"><span>Hue</span><strong id="hueVal">221&deg;</strong></div>
+            <input type="range" id="hueSlider" min="0" max="360" value="221">
+          </div>
+          <div class="slider-item">
+            <div class="slider-label"><span>Saturation</span><strong id="satVal">83%</strong></div>
+            <input type="range" id="satSlider" min="8" max="100" value="83">
+          </div>
+          <div class="slider-item">
+            <div class="slider-label"><span>Base Lightness</span><strong id="lightVal">53%</strong></div>
+            <input type="range" id="lightSlider" min="25" max="75" value="53">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="tokenNameInput" value="brand" maxlength="20" class="btn" style="width:110px;text-align:left;" aria-label="Token prefix name" title="Token variable prefix">
+        </div>
+      </div>
+
+      <div class="presets-strip" id="presetsStrip" aria-label="Curated brand presets"></div>
+    </section>
+
+    <section class="card" id="simulationSurface" aria-label="Generated 50 to 950 shade scale">
+      <div class="section-head">
+        <h2>Generated Color Ramp (50 &ndash; 950)</h2>
+        <span class="section-sub">Click any swatch to copy Hex · Numbers indicate WCAG contrast vs. White / Dark Ink</span>
+      </div>
+      <div class="ramp-grid" id="rampGrid"></div>
+    </section>
+
+    <section class="two-col">
+      <article class="card" aria-label="Interactive WCAG Contrast Pair Checker">
+        <div class="section-head">
+          <h2>WCAG Contrast Pair Inspector</h2>
+          <button type="button" class="btn" id="swapPairBtn">Swap FG / BG</button>
+        </div>
+
+        <div class="pair-selectors">
+          <div class="select-field">
+            <label for="fgSelect">Foreground Text</label>
+            <select id="fgSelect"></select>
+          </div>
+          <div class="select-field">
+            <label for="bgSelect">Background Surface</label>
+            <select id="bgSelect"></select>
+          </div>
+        </div>
+
+        <div class="contrast-preview-box" id="pairPreview">
+          <h3 class="contrast-preview-title">Readable Interface Headline</h3>
+          <p class="contrast-preview-body">Body copy at 14px regular weight must pass 4.5:1 (AA) or 7.0:1 (AAA) for comfortable reading.</p>
+        </div>
+
+        <div class="ratio-row">
+          <div>
+            <div class="section-sub">Contrast Ratio</div>
+            <div class="big-ratio" id="pairRatio">-- : 1</div>
+          </div>
+          <div class="wcag-pills" id="wcagPills"></div>
+          <button type="button" class="btn" id="autoFixBtn">Auto-Fix to AA</button>
+        </div>
+      </article>
+
+      <article class="card" id="livePreviewCard" aria-label="Live UI component token preview">
+        <div class="section-head">
+          <h2>Live Component Preview</h2>
+          <span class="section-sub">Styled directly from your generated CSS custom properties</span>
+        </div>
+
+        <div class="preview-stage">
+          <div class="ui-card">
+            <span class="ui-badge">Design System Token Preview</span>
+            <h3 style="margin:0;font-size:17px;color:var(--brand-950);">Shipping accessible color tokens</h3>
+            <p style="margin:0;font-size:13px;color:var(--brand-900);">Hover states, borders, surface tints, and crisp ink pairings derived automatically.</p>
+            <div class="ui-actions">
+              <button type="button" class="ui-btn-primary">Primary Action</button>
+              <button type="button" class="ui-btn-secondary">Secondary Tonal</button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card" aria-label="WCAG pair matrix">
+      <div class="section-head">
+        <h2>Accessibility Pair Matrix</h2>
+        <span class="section-sub">Row = Background · Column = Foreground · Cells show contrast ratio</span>
+      </div>
+      <div class="matrix-wrap">
+        <table class="matrix-table" id="matrixTable"></table>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Export design tokens">
+      <div class="section-head">
+        <h2>Export Tokens</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn" id="copyCodeBtn">Copy Snippet</button>
+          <button type="button" class="btn btn-accent" id="downloadTokensBtn">Download File</button>
+        </div>
+      </div>
+
+      <div class="export-tabs" role="tablist">
+        <button type="button" class="tab-btn is-active" data-format="css">CSS Custom Properties</button>
+        <button type="button" class="tab-btn" data-format="tailwind">Tailwind @theme</button>
+        <button type="button" class="tab-btn" data-format="json">W3C JSON Tokens</button>
+      </div>
+      <pre class="code-block" id="exportCode"></pre>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+</body>
+</html>
